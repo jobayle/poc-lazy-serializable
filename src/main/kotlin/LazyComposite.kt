@@ -1,11 +1,18 @@
 package org.example
 
+import com.esotericsoftware.kryo.DefaultSerializer
+import com.esotericsoftware.kryo.serializers.BeanSerializer
 import com.fasterxml.jackson.annotation.JsonCreator
 import org.example.lazy.*
 
 /**
  * This class implements the lazy composite pattern as done in LetReco Phoenix.
+ *
+ * In Kryo the default serializer is the FieldSerializer that uses reflection on fields.
+ * Because we're using delegates, we must use the BeanSerializer to serialize the value in
+ * ref holders. Otherwise, Kryo will try to serialize the ref holder itself.
  */
+@DefaultSerializer(BeanSerializer::class)
 class LazyComposite(initializers: LazyCompositeInitializers) {
     var lazyStr: String by initializers.strInitializer
     var lazyType: MyType by initializers.typeInitializer
@@ -57,6 +64,11 @@ data class MyType (
     val name: String,
     val size: Long,
 ) {
+    /**
+     * Secondary ctor required by Kryo (but not Jackson)
+     * @see https://github.com/EsotericSoftware/kryo?tab=readme-ov-file#object-creation
+     */
+    constructor(): this("", 0)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

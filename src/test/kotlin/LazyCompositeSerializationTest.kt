@@ -1,3 +1,6 @@
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.example.LazyComposite
@@ -15,12 +18,14 @@ import kotlin.test.assertContains
 @TestInstance(Lifecycle.PER_CLASS)
 class LazyCompositeSerializationTest {
 
-    private val mapper = jacksonObjectMapper()
     private val svc = LazyService.INSTANCE
-
     private val lazyInstance = svc.createLazyComposite()
     private val notLazyInstance = svc.createNotLazyComposite()
+    private lateinit var deserializedInstance: LazyComposite
 
+    // JACKSON SERIALIZATION (use case: json payload of REST API)
+
+    private val mapper = jacksonObjectMapper()
     private lateinit var json: String
 
     @Order(1)
@@ -31,7 +36,7 @@ class LazyCompositeSerializationTest {
 
     @Order(10)
     @Test
-    fun testSerializeLazy() {
+    fun testSerializeJacksonLazy() {
         assertDoesNotThrow {
             json = mapper.writeValueAsString(lazyInstance)
         }
@@ -48,16 +53,7 @@ class LazyCompositeSerializationTest {
 
     @Order(11)
     @Test
-    fun testDeserializeLazy() {
-        val instance = mapper.readValue<LazyComposite>(json)
-        assertEquals(lazyInstance, instance)
-    }
-
-    // ----
-
-    @Order(20)
-    @Test
-    fun testSerializeNotLazy() {
+    fun testSerializeJacksonNotLazy() {
         json = ""
         assertDoesNotThrow {
             json = mapper.writeValueAsString(notLazyInstance)
@@ -71,14 +67,64 @@ class LazyCompositeSerializationTest {
         assertContains(json, notLazyInstance.lazyType.name)
         notLazyInstance.lazyList.forEach { assertContains(json, it) }
         notLazyInstance.lazyTypeList.forEach { assertContains(json, it.name) }
+    }
 
+    @Order(12)
+    @Test
+    fun testDeserializeJackson() {
+        assertDoesNotThrow {
+            deserializedInstance = mapper.readValue<LazyComposite>(json)
+        }
+        assertEquals(lazyInstance, deserializedInstance)
+    }
+
+    @Order(13)
+    @Test
+    fun testSerializeJacksonDeserializedInstance() {
+        json = ""
+        assertDoesNotThrow {
+            json = mapper.writeValueAsString(deserializedInstance)
+        }
+
+        println("Serialization result:")
+        println(json)
+        println("################\n")
+
+        assertContains(json, notLazyInstance.lazyStr)
+        assertContains(json, notLazyInstance.lazyType.name)
+        notLazyInstance.lazyList.forEach { assertContains(json, it) }
+        notLazyInstance.lazyTypeList.forEach { assertContains(json, it.name) }
+    }
+
+    // KRYO SERIALIZATION (use case: redis via redisson)
+
+    private val kryo = Kryo()
+    init {
+        // TODO see how Redisson configures this (de)serializer
+        // see: https://github.com/redisson/redisson/blob/master/redisson/src/main/java/org/redisson/codec/Kryo5Codec.java
+        kryo.isRegistrationRequired = false
+    }
+
+    private lateinit var kryoBin: ByteArray
+
+    @Order(20)
+    @Test
+    fun testSerializeKryoLazy() {
+        assertDoesNotThrow {
+            val output = Output(1024)
+            kryo.writeObject(output, lazyInstance)
+            kryoBin = output.toBytes()
+        }
+        assertTrue(kryoBin.isNotEmpty())
     }
 
     @Order(21)
     @Test
-    fun testDeserializeNotLazy() {
-        val instance = mapper.readValue<LazyComposite>(json)
-        assertEquals(notLazyInstance, instance)
+    fun testDeserializeKryo() {
+        assertDoesNotThrow {
+            deserializedInstance = kryo.readObject(Input(kryoBin), LazyComposite::class.java)
+        }
+        assertEquals(lazyInstance, deserializedInstance)
     }
 
 }
