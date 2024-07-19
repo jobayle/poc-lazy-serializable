@@ -9,6 +9,7 @@ import org.example.lazy.*
 class LazyComposite(initializers: LazyCompositeInitializers) {
     var lazyStr: String by initializers.strInitializer
     var lazyType: MyType by initializers.typeInitializer
+    var lazyNull: String? by initializers.nullInitializer
     var lazyList: List<String> by initializers.listInitializer
     var lazyTypeList: List<MyType> by initializers.listTypeInitializer
 
@@ -19,7 +20,8 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
             lateinitRef(),
             lateinitRef(),
             lateinitRef(),
-            lateinitRef()
+            lateinitRef(),
+            lateinitRef(),
         )
     )
 
@@ -31,6 +33,7 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
 
         if (lazyStr != other.lazyStr) return false
         if (lazyType != other.lazyType) return false
+        if (lazyNull != other.lazyNull) return false
         if (!lazyList.containsAll(other.lazyList)) return false
         if (!lazyTypeList.containsAll(other.lazyTypeList)) return false
 
@@ -40,6 +43,7 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
     override fun hashCode(): Int {
         var result = lazyStr.hashCode()
         result = 31 * result + lazyType.hashCode()
+        result = 31 * result + lazyNull.hashCode()
         result = 31 * result + lazyList.hashCode()
         result = 31 * result + lazyTypeList.hashCode()
         return result
@@ -81,6 +85,8 @@ data class LazyCompositeInitializers (
     val strInitializer: LazyRef<String>,
     // Complex type
     val typeInitializer: LazyRef<MyType>,
+    // Nullable type
+    val nullInitializer: LazyRef<String?>,
     // Collection of basic type
     val listInitializer: LazyRef<List<String>>,
     // Collection of complex type
