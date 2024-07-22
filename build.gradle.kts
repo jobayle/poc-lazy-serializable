@@ -12,6 +12,7 @@ repositories {
 dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
     implementation("com.esotericsoftware:kryo:5.6.0")
+    implementation("org.redisson:redisson:3.33.0")
     testImplementation(kotlin("test"))
 }
 

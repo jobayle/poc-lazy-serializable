@@ -3,6 +3,7 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.netty.buffer.ByteBuf
 import org.example.LazyComposite
 import org.example.LazyService
 import org.junit.jupiter.api.Assertions.*
@@ -12,7 +13,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import org.redisson.codec.Kryo5Codec
 import kotlin.test.assertContains
+import kotlin.test.assertIs
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -127,4 +130,29 @@ class LazyCompositeSerializationTest {
         assertEquals(lazyInstance, deserializedInstance)
     }
 
+    // REDISSON Kryo CODEC
+
+    private val codec = Kryo5Codec()
+    private lateinit var redissonBuf: ByteBuf
+
+    @Order(30)
+    @Test
+    fun testSerializeRedissonLazy() {
+        assertDoesNotThrow {
+            kryoBin = ByteArray(2048)
+            redissonBuf = codec.valueEncoder.encode(lazyInstance)
+        }
+        assertTrue(kryoBin.isNotEmpty())
+    }
+
+    @Order(31)
+    @Test
+    fun testDeserializeRedisson() {
+        assertDoesNotThrow {
+            val decoded = codec.valueDecoder.decode(redissonBuf, null)
+            assertNotNull(decoded)
+            deserializedInstance = assertIs<LazyComposite>(decoded)
+        }
+        assertEquals(lazyInstance, deserializedInstance)
+    }
 }
