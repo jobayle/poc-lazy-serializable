@@ -139,10 +139,9 @@ class LazyCompositeSerializationTest {
     @Test
     fun testSerializeRedissonLazy() {
         assertDoesNotThrow {
-            kryoBin = ByteArray(2048)
             redissonBuf = codec.valueEncoder.encode(lazyInstance)
         }
-        assertTrue(kryoBin.isNotEmpty())
+        assertTrue(redissonBuf.capacity() > 0)
     }
 
     @Order(31)

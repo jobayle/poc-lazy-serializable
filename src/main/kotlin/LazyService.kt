@@ -11,6 +11,7 @@ class LazyService {
     
     fun createLazyComposite(): LazyComposite {
         return LazyComposite(
+            MyType("jon", 8483),
             LazyCompositeInitializers(
                 ref { "Hello" },
                 ref { MyType("Hi", 2) },
@@ -23,6 +24,7 @@ class LazyService {
     
     fun createNotLazyComposite(): LazyComposite {
         return LazyComposite(
+            MyType("jon", 8483),
             LazyCompositeInitializers(
                 refOf( "Hello" ),
                 refOf( MyType("Hi", 2) ),

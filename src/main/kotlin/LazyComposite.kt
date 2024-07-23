@@ -13,16 +13,20 @@ import org.example.lazy.*
  * ref holders. Otherwise, Kryo will try to serialize the ref holder itself.
  */
 @DefaultSerializer(BeanSerializer::class)
-class LazyComposite(initializers: LazyCompositeInitializers) {
+class LazyComposite(myBase: MyType, initializers: LazyCompositeInitializers) {
     var lazyStr: String by initializers.strInitializer
     var lazyType: MyType by initializers.typeInitializer
     var lazyNull: String? by initializers.nullInitializer
     var lazyList: List<String> by initializers.listInitializer
     var lazyTypeList: List<MyType> by initializers.listTypeInitializer
 
+    var strDelegate: String by myBase::name
+    var longDelegate: Long by myBase::size
+
     /** Secondary ctor for deserialization */
     @JsonCreator
     constructor() : this (
+        MyType(),
         LazyCompositeInitializers(
             lateinitRef(),
             lateinitRef(),
@@ -38,6 +42,8 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
 
         other as LazyComposite
 
+        if (strDelegate != other.strDelegate) return false
+        if (longDelegate != other.longDelegate) return false
         if (lazyStr != other.lazyStr) return false
         if (lazyType != other.lazyType) return false
         if (lazyNull != other.lazyNull) return false
@@ -49,6 +55,8 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
 
     override fun hashCode(): Int {
         var result = lazyStr.hashCode()
+        result = 31 * result + strDelegate.hashCode()
+        result = 31 * result + longDelegate.hashCode()
         result = 31 * result + lazyType.hashCode()
         result = 31 * result + lazyNull.hashCode()
         result = 31 * result + lazyList.hashCode()
@@ -61,8 +69,8 @@ class LazyComposite(initializers: LazyCompositeInitializers) {
  * A non-basic type.
  */
 data class MyType (
-    val name: String,
-    val size: Long,
+    var name: String,
+    var size: Long,
 ) {
     /**
      * Secondary ctor required by Kryo (but not Jackson)

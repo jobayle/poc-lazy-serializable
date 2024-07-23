@@ -46,7 +46,8 @@ internal class LateinitRefValueImpl<V>: LazyRef<V> {
 
     override var value: V
         get() {
-            require(_value !== UNINITIALIZED_VALUE) { "Value not set" }
+            if (_value === UNINITIALIZED_VALUE)
+                throw UninitializedPropertyAccessException("lateinit property has not been initialized")
             @Suppress("UNCHECKED_CAST")
             return _value as V
         }
